@@ -4,7 +4,7 @@ void main() {
   runApp(const CalculatorApp());
 }
 
-// The main app controls the light and dark themes.
+// Controls the light and dark themes.
 class CalculatorApp extends StatefulWidget {
   const CalculatorApp({super.key});
 
@@ -62,7 +62,7 @@ class CalculatorPage extends StatefulWidget {
 }
 
 class _CalculatorPageState extends State<CalculatorPage> {
-  // These variables hold the calculator's current state.
+  // Calculator state variables.
   String currentInput = '0';
   double? accumulator;
   String? pendingOperator;
@@ -71,7 +71,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
   bool calculationFinished = false;
   String? errorMessage;
 
-  // Convert a number into readable text.
+  // Format numbers without unnecessary decimal zeros.
   String formatNumber(double number) {
     if (!number.isFinite) {
       return 'Error';
@@ -95,7 +95,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
     return result;
   }
 
-  // Reset the entire calculator.
+  // Reset all calculator values.
   void clearCalculator() {
     setState(() {
       currentInput = '0';
@@ -107,7 +107,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
     });
   }
 
-  // Process number button presses.
+  // Handle number input.
   void enterDigit(String digit) {
     setState(() {
       if (errorMessage != null || calculationFinished) {
@@ -132,7 +132,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
     });
   }
 
-  // The four basic arithmetic operations.
+  // Perform the arithmetic operations.
   double? calculate(double first, double second, String operation) {
     switch (operation) {
       case '+':
@@ -151,7 +151,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
     }
   }
 
-  // Show a recoverable error instead of crashing.
+  // Show a division-by-zero error.
   void showError() {
     currentInput = 'Error';
     errorMessage = 'Cannot divide by zero. Press AC to reset.';
@@ -161,8 +161,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
     calculationFinished = false;
   }
 
-  // Apply the previous operation before saving the next one.
-  // This makes calculations evaluate LEFT TO RIGHT.
+  // Calculate left to right and save the next operator.
   void chooseOperator(String operation) {
     setState(() {
       if (errorMessage != null) {
@@ -170,7 +169,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
       }
 
       if (pendingOperator != null) {
-        // Pressing two operators in a row replaces the old one.
+        // Replace the operator if no second number was entered.
         if (awaitingOperand) {
           pendingOperator = operation;
           return;
@@ -200,14 +199,14 @@ class _CalculatorPageState extends State<CalculatorPage> {
     });
   }
 
-  // Finish the calculation when equals is pressed.
+  // Complete the calculation.
   void pressEquals() {
     setState(() {
       if (errorMessage != null) {
         return;
       }
 
-      // Equals does nothing without a complete operation.
+      // Ignore equals if there is no completed second operand.
       if (pendingOperator == null || awaitingOperand) {
         return;
       }
@@ -228,7 +227,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
     });
   }
 
-  // Toggle the sign of the current number.
+  // Change the sign of the entered number.
   void toggleSign() {
     setState(() {
       if (errorMessage != null) {
@@ -249,7 +248,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
     });
   }
 
-  // Send each button to the correct function.
+  // Process keypad buttons.
   void handleButton(String value) {
     if (RegExp(r'^[0-9]$').hasMatch(value)) {
       enterDigit(value);
@@ -264,8 +263,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
     }
   }
 
-  // Build a button with consistent spacing and touch feedback.
-  Widget calculatorButton(String value, {int flex = 1}) {
+  // Create one calculator button.
+  Widget calculatorButton(String value) {
     final bool isOperator = ['+', '−', '×', '÷'].contains(value);
     final bool isEquals = value == '=';
     final bool isSpecial = value == 'AC' || value == '±';
@@ -286,26 +285,38 @@ class _CalculatorPageState extends State<CalculatorPage> {
       foreground = colors.onPrimary;
     }
 
+    String label = value;
+
+    switch (value) {
+      case '÷':
+        label = 'Divide';
+        break;
+      case '×':
+        label = 'Multiply';
+        break;
+      case '−':
+        label = 'Subtract';
+        break;
+      case '+':
+        label = 'Add';
+        break;
+      case '=':
+        label = 'Equals';
+        break;
+      case 'AC':
+        label = 'All clear';
+        break;
+      case '±':
+        label = 'Change sign';
+        break;
+    }
+
     return Expanded(
-      flex: flex,
       child: Padding(
-        padding: const EdgeInsets.all(5),
+        padding: const EdgeInsets.all(4),
         child: Semantics(
-          label: value == '÷'
-              ? 'Divide'
-              : value == '×'
-              ? 'Multiply'
-              : value == '−'
-              ? 'Subtract'
-              : value == '+'
-              ? 'Add'
-              : value == '='
-              ? 'Equals'
-              : value == 'AC'
-              ? 'All clear'
-              : value == '±'
-              ? 'Change sign'
-              : value,
+          label: label,
+          button: true,
           child: ElevatedButton(
             onPressed: () => handleButton(value),
             style: ElevatedButton.styleFrom(
@@ -314,7 +325,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
               elevation: 0,
               padding: EdgeInsets.zero,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
             child: FittedBox(
@@ -333,12 +344,70 @@ class _CalculatorPageState extends State<CalculatorPage> {
     );
   }
 
-  Widget buttonRow(List<String> values) {
-    return Expanded(
-      child: Row(
-        children: values.map((value) {
-          return calculatorButton(value);
-        }).toList(),
+  // Each row has the same height.
+  Widget buttonRow(List<String> buttons) {
+    return SizedBox(
+      height: 68,
+      child: Row(children: buttons.map(calculatorButton).toList()),
+    );
+  }
+
+  // Build the calculator's display.
+  Widget buildDisplay(ColorScheme colors) {
+    String operationText = 'Ready';
+
+    if (pendingOperator != null && accumulator != null) {
+      operationText = '${formatNumber(accumulator!)} $pendingOperator';
+    } else if (calculationFinished) {
+      operationText = 'Result';
+    }
+
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 165),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            operationText,
+            style: TextStyle(fontSize: 17, color: colors.onSurfaceVariant),
+          ),
+          const SizedBox(height: 14),
+
+          // Flexible text scaling prevents wide values overflowing.
+          SizedBox(
+            width: double.infinity,
+            height: 67,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                currentInput,
+                style: const TextStyle(
+                  fontSize: 55,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+
+          // The error text can wrap instead of overflowing vertically.
+          if (errorMessage != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              errorMessage!,
+              softWrap: true,
+              textAlign: TextAlign.right,
+              style: TextStyle(color: colors.error, fontSize: 13),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -346,16 +415,6 @@ class _CalculatorPageState extends State<CalculatorPage> {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
-
-    String operationText = '';
-
-    if (pendingOperator != null && accumulator != null) {
-      operationText = '${formatNumber(accumulator!)} $pendingOperator';
-    } else if (calculationFinished) {
-      operationText = 'Result';
-    } else {
-      operationText = 'Ready';
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -369,76 +428,35 @@ class _CalculatorPageState extends State<CalculatorPage> {
           ),
         ],
       ),
+
+      // LayoutBuilder detects available height.
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            children: [
-              // Calculator display.
-              Expanded(
-                flex: 2,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: colors.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Scrolling prevents vertical overflow on short windows.
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      Text(
-                        operationText,
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 75,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            currentInput,
-                            style: const TextStyle(
-                              fontSize: 58,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (errorMessage != null)
-                        Text(
-                          errorMessage!,
-                          style: TextStyle(color: colors.error, fontSize: 13),
-                          textAlign: TextAlign.right,
-                        ),
+                      buildDisplay(colors),
+                      const SizedBox(height: 16),
+
+                      // All keypad buttons stay accessible.
+                      buttonRow(['7', '8', '9', '÷']),
+                      buttonRow(['4', '5', '6', '×']),
+                      buttonRow(['1', '2', '3', '−']),
+                      buttonRow(['AC', '0', '±', '+']),
+                      buttonRow(['=']),
                     ],
                   ),
                 ),
               ),
-
-              const SizedBox(height: 14),
-
-              // Calculator keypad.
-              Expanded(
-                flex: 5,
-                child: Column(
-                  children: [
-                    buttonRow(['7', '8', '9', '÷']),
-                    buttonRow(['4', '5', '6', '×']),
-                    buttonRow(['1', '2', '3', '−']),
-                    buttonRow(['AC', '0', '±', '+']),
-                    Expanded(child: Row(children: [calculatorButton('=')])),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
